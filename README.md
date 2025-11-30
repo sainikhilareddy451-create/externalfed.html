@@ -1,1 +1,334 @@
 # externalfed.html
+<!DOCTYPE html>
+<html>
+<head>
+<title>Work-Study Portal</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  background:url("https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg") no-repeat center center/cover;
+  animation: fadeIn 2s ease-in-out;
+}
+
+@keyframes fadeIn{
+  from{opacity:0;}
+  to{opacity:1;}
+}
+
+.container{
+  width:370px;
+  margin:120px auto;
+  background:rgba(255,255,255,0.92);
+  padding:25px;
+  border-radius:15px;
+  box-shadow:0 0 15px rgba(0,0,0,0.3);
+  animation: slide 0.8s;
+}
+
+@keyframes slide{
+  from{transform:translateY(50px); opacity:0;}
+  to{transform:translateY(0); opacity:1;}
+}
+
+h2{
+  text-align:center;
+  color:#1a3c80;
+}
+
+label{
+  font-size:15px;
+  color:#333;
+}
+
+input,select{
+  width:100%;
+  padding:10px;
+  margin:8px 0;
+  border-radius:8px;
+  border:1px solid #888;
+}
+
+button{
+  width:100%;
+  padding:12px;
+  background:#ff69b4;
+  border:none;
+  border-radius:8px;
+  font-size:16px;
+  color:white;
+  cursor:pointer;
+}
+
+button:hover{
+  background:#ff4b95;
+}
+
+.page{
+  display:none;
+}
+
+.jobs-box{
+  background:white;
+  padding:15px;
+  margin-top:15px;
+  border-radius:10px;
+}
+
+.title{
+  font-size:18px;
+  color:#1a3c80;
+  font-weight:bold;
+}
+
+.job-item{
+  margin:10px 0;
+  padding:10px;
+  border-radius:8px;
+  background:#f2f2f2;
+}
+.status{
+  font-weight:bold;
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN PAGE -->
+<div id="loginPage" class="container">
+<h2>Login</h2>
+
+<label>Select Role</label>
+<select id="role">
+<option value="admin">Admin</option>
+<option value="student">Student</option>
+</select>
+
+<label>Username</label>
+<input type="text" id="user">
+
+<label>Password</label>
+<input type="password" id="pass">
+
+<button onclick="login()">Login</button>
+</div>
+
+
+<!-- ADMIN PAGE -->
+<div id="adminPage" class="container page">
+<h2>Admin Panel</h2>
+
+<div class="jobs-box">
+<p class="title">Post a Job</p>
+
+<input type="text" id="jobTitle" placeholder="Job Title">
+<input type="text" id="jobPay" placeholder="Pay/Hour">
+
+<label>Start Date</label>
+<input type="date" id="jobStart">
+
+<label>Deadline</label>
+<input type="date" id="jobEnd">
+
+<label>Mode</label>
+<select id="jobMode">
+  <option>Online</option>
+  <option>Offline</option>
+</select>
+
+<button onclick="addJob()">Add Job</button>
+</div>
+
+<div class="jobs-box">
+<p class="title">Applications</p>
+<ul id="adminApplications"></ul>
+</div>
+</div>
+
+
+<!-- STUDENT PAGE -->
+<div id="studentPage" class="container page">
+<h2>Student Dashboard</h2>
+
+<div class="jobs-box">
+<p class="title">Available Jobs</p>
+<ul id="studentJobs"></ul>
+</div>
+
+<div class="jobs-box">
+<p class="title">My Applications</p>
+<ul id="studentApplications"></ul>
+</div>
+</div>
+
+
+<script>
+
+let jobs = JSON.parse(localStorage.getItem("jobs")) || [];
+let applications = JSON.parse(localStorage.getItem("applications")) || [];
+
+function saveAll(){
+  localStorage.setItem("jobs", JSON.stringify(jobs));
+  localStorage.setItem("applications", JSON.stringify(applications));
+}
+
+/* ---------------- LOGIN ------------------ */
+function login(){
+  let r=document.getElementById("role").value;
+  let u=document.getElementById("user").value;
+  let p=document.getElementById("pass").value;
+
+  if(r==="admin" && u==="admin" && p==="admin123"){
+    showPage("adminPage");
+    loadAdminApplications();
+  }
+  else if(r==="student" && u==="student" && p==="stud123"){
+    showPage("studentPage");
+    loadJobsForStudents();
+    loadStudentApplications();
+  }
+  else{
+    alert("Wrong username or password");
+  }
+}
+
+function showPage(page){
+  document.getElementById("loginPage").style.display="none";
+  document.getElementById("adminPage").style.display="none";
+  document.getElementById("studentPage").style.display="none";
+
+  document.getElementById(page).style.display="block";
+}
+
+
+/* ---------------- ADD JOB ------------------ */
+function addJob(){
+  let t=document.getElementById("jobTitle").value;
+  let pay=document.getElementById("jobPay").value;
+  let start=document.getElementById("jobStart").value;
+  let end=document.getElementById("jobEnd").value;
+  let mode=document.getElementById("jobMode").value;
+
+  if(t==="") return;
+
+  jobs.push({
+    id: Date.now(),
+    title:t,
+    pay:pay,
+    start:start,
+    end:end,
+    mode:mode
+  });
+
+  saveAll();
+  loadJobsForStudents();
+
+  document.getElementById("jobTitle").value="";
+  document.getElementById("jobPay").value="";
+  document.getElementById("jobStart").value="";
+  document.getElementById("jobEnd").value="";
+}
+
+
+/* ----------- STUDENT SEES JOBS ------------- */
+function loadJobsForStudents(){
+  let list=document.getElementById("studentJobs");
+  list.innerHTML="";
+
+  jobs.forEach(j=>{
+    let li=document.createElement("li");
+    li.className="job-item";
+
+    li.innerHTML=`
+      <b>${j.title}</b><br>
+      Pay: ₹${j.pay}<br>
+      Mode: ${j.mode}<br>
+      Start: ${j.start} | End: ${j.end}<br>
+      <button onclick="applyJob(${j.id})">Apply</button>
+    `;
+
+    list.appendChild(li);
+  });
+}
+
+
+/* ---------------- APPLY JOB ------------------ */
+function applyJob(jobId){
+  applications.push({
+    id: Date.now(),
+    jobId: jobId,
+    status: "Pending"
+  });
+
+  saveAll();
+  alert("Application Submitted!");
+
+  loadStudentApplications();
+}
+
+/* ----------- STUDENT: VIEW APPLICATIONS ---------- */
+function loadStudentApplications(){
+  let list=document.getElementById("studentApplications");
+  list.innerHTML="";
+
+  applications.forEach(a=>{
+    let job = jobs.find(j => j.id === a.jobId);
+    if(!job) return;
+
+    let li=document.createElement("li");
+    li.className="job-item";
+
+    li.innerHTML=`
+      <b>${job.title}</b><br>
+      Status: <span class="status">${a.status}</span>
+    `;
+
+    list.appendChild(li);
+  });
+}
+
+
+/* ----------- ADMIN: VIEW APPLICATIONS ----------- */
+function loadAdminApplications(){
+  let list=document.getElementById("adminApplications");
+  list.innerHTML="";
+
+  applications.forEach(a=>{
+    let job = jobs.find(j => j.id === a.jobId);
+    if(!job) return;
+
+    let li=document.createElement("li");
+    li.className="job-item";
+
+    li.innerHTML=`
+      <b>${job.title}</b><br>
+      Status: ${a.status}<br>
+      <button onclick="approve(${a.id})">Approve</button>
+      <button onclick="reject(${a.id})">Reject</button>
+    `;
+
+    list.appendChild(li);
+  });
+}
+
+function approve(id){
+  let app = applications.find(a => a.id===id);
+  app.status="Approved";
+  saveAll();
+  loadAdminApplications();
+  loadStudentApplications();
+}
+
+function reject(id){
+  let app = applications.find(a => a.id===id);
+  app.status="Rejected";
+  saveAll();
+  loadAdminApplications();
+  loadStudentApplications();
+}
+
+</script>
+
+</body>
+</html>
